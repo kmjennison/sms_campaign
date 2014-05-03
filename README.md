@@ -41,4 +41,4 @@ TODO add instructions on how to install, configure, & run etc
 
 ## Authors
 
-Made with <3 by @lzecon, @oahzit, @secondbreakfast, @kmjennison, Amy King, @alysonla, & jtjsncd at #hackbrightforgood, May 3-4, 2014
+Made with <3 by [@lzecon](https://github.com/lzecon), [@oahzit](https://github.com/oahzit), [@secondbreakfast](https://github.com/secondbreakfast), [@kmjennison](https://github.com/kmjennison), Amy King, [@alysonla](https://github.com/alysonla), & [@jtjsncd] at #hackbrightforgood, May 3-4, 2014
