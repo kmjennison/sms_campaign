@@ -6,6 +6,7 @@ from twilio.rest import TwilioRestClient
 from django_twilio.decorators import twilio_view
 from twilio.twiml import Response
 from django.conf import settings
+from sms_campaigns import local_settings
 
 
 def addGroup(group_name):
@@ -83,7 +84,7 @@ def isPhoneNumber(num_string):
 
 def sendMessage(phone_number, messageBody):
     account_sid = settings.TWILIO_ACCOUNT_SID
-    auth_token  = settings.TWILIO_AUTH_TOKEN
+    auth_token  = local_settings.TWILIO_AUTH_TOKEN
     client = TwilioRestClient(account_sid, auth_token)
 
     message = client.messages.create(body=messageBody,
@@ -120,7 +121,7 @@ def sms(request):
             r = Response()
             r.message(msg)
 
-            if enrolleeNumber == "6023192412":
+            if enrolleeNumber == local_settings.ALYSON_NUMBER:
                 sendMessage(enrolleeNumber, "Hey girl, fork me on Github. - Ryan")
             return r
 

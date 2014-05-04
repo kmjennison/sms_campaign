@@ -138,7 +138,6 @@ INSTALLED_APPS = (
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 
 TWILIO_ACCOUNT_SID = 'AC9b7ed889c04a5f289279a6ef0d6e341e'
-TWILIO_AUTH_TOKEN = 'ba2bb066b9641607e615eb759e7c7e84'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -168,3 +167,8 @@ LOGGING = {
         },
     }
 }
+
+try:
+    from local_settings import *
+except ImportError:
+    pass
