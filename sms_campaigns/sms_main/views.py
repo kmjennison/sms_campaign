@@ -5,6 +5,7 @@ import pytz
 from twilio.rest import TwilioRestClient
 from django_twilio.decorators import twilio_view
 from twilio.twiml import Response
+from django.conf import settings
 
 
 def addGroup(group_name):
@@ -52,8 +53,8 @@ def checkToSendMessages():
             m.save()
             
 def sendMessage(phone_number, messageBody):
-    account_sid = "AC9b7ed889c04a5f289279a6ef0d6e341e"
-    auth_token  = "ba2bb066b9641607e615eb759e7c7e84"
+    account_sid = settings.TWILIO_ACCOUNT_SID
+    auth_token  = settings.TWILIO_AUTH_TOKEN
     client = TwilioRestClient(account_sid, auth_token)
 
     # hard code this in for now
