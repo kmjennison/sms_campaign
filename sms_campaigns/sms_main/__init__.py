@@ -1,5 +1,7 @@
 from apscheduler.scheduler import Scheduler
-from sms_main.views import checkToSendMessages
+from sms_main.views import *
+import logging
+logging.basicConfig()
 
 # Start the scheduler
 sched = Scheduler()
