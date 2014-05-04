@@ -16,12 +16,13 @@ def addCampaign(name, description, groupId, message_interval, repeats):
     Campaign.objects.create(name=name, description=description, group=group, message_interval_in_seconds=message_interval, total_message_occurrences=repeats)
     
 def addRecipient(first_name, last_name, phone_number):
-    Recipient.objects.create(first_name=first_name, last_name=last_name, phone_number=phone_number)
+    Recipient.objects.get_or_create(first_name=first_name, last_name=last_name, phone_number=phone_number)
 
-def addRecipientToGroup(recipientId, groupId):
-    recip = Recipient.objects.get(id=recipientId)
-    group = Group.objects.get(id=groupId)
-    m = Membership(recipient=recip, group=group)
+def addRecipientToCampaign(phone_number, campaignId):
+    recip = Recipient.objects.get(phone_number=phone_number)
+    camp = Campaign.objects.get(id=campaignId)
+
+    m = Membership(recipient=recip, campaign=camp)
     m.save()
     
 # Returns seconds that have elapsed between datetime and now.
@@ -54,16 +55,24 @@ def checkToSendMessages():
 
 # putting this here for now, may want to move it to a different file
 def isAuthorizedEnroller(phone_number):
-    # hard coded for now. probably need to verify against the database
+    # hard coded for now. probably need to verify against the database table, but that's not set up yet
     if phone_number == '+14155833353':
         return True
     else:
         return False
 
 def isValidCampaignID(campaign_id):
-    # hard coded campaign id's
-    campaign_id = int(campaign_id)
-    campaign_ids = [1,2,3]
+
+    # pull campaign info
+    group = Group.objects.get(id=1)
+    camps = group.campaign_set.all()
+
+    campaign_ids = [];
+    for camp in camps:
+        campaign_ids.append(camp.id)
+
+    print campaign_ids
+    
     if campaign_id in campaign_ids:
         return True
     else:
@@ -95,8 +104,18 @@ def sms(request):
             # store the enrollee phone number in the session for use in between requests
             request.session[senderNumber] = enrolleeNumber
 
+            addRecipient('J', 'Doe', enrolleeNumber)
+
+            # pull campaign info
+            group = Group.objects.get(id=1)
+            camps = group.campaign_set.all()
+
+            for camp in camps:
+                campID = str(camp.id)
+                campName = camp.name
+                campaignIDs = '\n' + campID + ' - ' + campName
+
             # we're going to hard-code the campaign id's for now
-            campaignIDs = '1 - Malaria \n2 - Tuberculosis \n3 - Ryan Gosling Inspiration'
             msg = 'Please select a campaign:\n %s' % (campaignIDs)
             r = Response()
             r.message(msg)
@@ -106,12 +125,16 @@ def sms(request):
             return r
 
         else:
-            if isValidCampaignID(smsMessage) and request.session[senderNumber] != None:
+            campaignID = int(smsMessage)
+            if isValidCampaignID(campaignID) and request.session[senderNumber] != None:
+                campaignName = Campaign.objects.get(id=campaignID)
                 enrolleeNumber = request.session[senderNumber]
+
+                addRecipientToCampaign(enrolleeNumber, campaignID)
                 msg = 'Enrollment for %s confirmed' % (enrolleeNumber)
                 r = Response()
                 r.message(msg)
-                enrollmentMessage = 'You have been enrolled. Stay tuned!'
+                enrollmentMessage = 'You have been enrolled in %s. Stay tuned!' % (campaignName)
                 sendMessage(enrolleeNumber, enrollmentMessage)
                 request.session[senderNumber] = None
                 return r
