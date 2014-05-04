@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import datetime
 
 class Recipient(models.Model):
     def __unicode__(self):
@@ -16,6 +17,8 @@ class Membership(models.Model):
     campaign = models.ForeignKey('Campaign')
     time_joined = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=True)
+    time_last_sent_message = models.DateTimeField(default=datetime.now)
+    total_messages_sent = models.IntegerField(default=0)
 
 class Campaign(models.Model):
     def __unicode__(self):
@@ -25,7 +28,7 @@ class Campaign(models.Model):
     description = models.TextField(blank=True)
     group = models.ForeignKey('Group')
     message_interval_in_seconds = models.BigIntegerField()
-    total_message_occurrences = models.IntegerField(default=1, help_text="Use zero for infinite occurences.")
+    total_message_occurrences = models.IntegerField(default=1)
     message_text = models.TextField()
     
 class Group(models.Model):
