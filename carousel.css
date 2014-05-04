@@ -52,10 +52,10 @@ body {
 }
 h1 {color: white; font-size: 50px;
   text-shadow: black 0.1em 0.1em 0.2em}
-
+/*
 .paddings {
-  padding-right: 5px;
-}
+  margin-right: 15px;*/
+/*}*/
 
 /*.something {
   width: 100%;
