@@ -132,10 +132,10 @@ def sms(request):
                 enrolleeNumber = request.session[senderNumber]
 
                 addRecipientToCampaign(enrolleeNumber, campaignID)
-                msg = 'Enrollment for %s confirmed' % (enrolleeNumber)
+                msg = 'Enrollment in %s confirmed for %s' % (campaignName, enrolleeNumber)
                 r = Response()
                 r.message(msg)
-                enrollmentMessage = 'You have been enrolled in %s. Stay tuned!' % (campaignName)
+                enrollmentMessage = 'You have been enrolled for %s. Stay tuned!' % (campaignName)
                 sendMessage(enrolleeNumber, enrollmentMessage)
                 request.session[senderNumber] = None
                 return r
