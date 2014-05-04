@@ -68,11 +68,10 @@ def sendMessage(phone_number, messageBody):
 
 @twilio_view
 def sms(request):
-    print request
-    sendMessage('nonsense1', 'nonsense2')
-    name = request.POST.get('Body', '')
-    msg = 'Hey %s, how are you today?' % (name)
-    print name
+    enrolleeNumber = request.POST.get('Body', '')
+    msg = 'Enrollment for %s confirmed' % (enrolleeNumber)
     r = Response()
     r.message(msg)
+    enrollmentMessage = 'You have been enrolled in this progam. Stay tuned!'
+    sendMessage(enrolleeNumber, enrollmentMessage)
     return r
