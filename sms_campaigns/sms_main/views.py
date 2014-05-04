@@ -2,6 +2,10 @@ from sms_main.models import *
 import time
 from datetime import datetime
 import pytz
+from twilio.rest import TwilioRestClient
+from django_twilio.decorators import twilio_view
+from twilio.twiml import Response
+
 
 def addGroup(group_name):
     Group.objects.create(name=group_name)
@@ -47,6 +51,27 @@ def checkToSendMessages():
                 m.active = False
             m.save()
             
-def sendMessage(phone_number, message):
-    # TODO: integrate Twilio
-    print "Sending message to " + phone_number + ": " + message
+def sendMessage(phone_number, messageBody):
+    account_sid = "AC9b7ed889c04a5f289279a6ef0d6e341e"
+    auth_token  = "ba2bb066b9641607e615eb759e7c7e84"
+    client = TwilioRestClient(account_sid, auth_token)
+
+    # hard code this in for now
+    phone_number = "4155833353"
+    messageBody = "Ahoy from the sms campaign!"
+
+    message = client.messages.create(body=messageBody,
+        to="+1" + phone_number, 
+        from_="+13312096805")
+    print "Sending message to " + phone_number + ": " + messageBody
+
+@twilio_view
+def sms(request):
+    print request
+    sendMessage('nonsense1', 'nonsense2')
+    name = request.POST.get('Body', '')
+    msg = 'Hey %s, how are you today?' % (name)
+    print name
+    r = Response()
+    r.message(msg)
+    return r
