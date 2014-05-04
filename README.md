@@ -2,7 +2,7 @@
 
 A simple way to create an SMS Campaign for NGOs
 
-Add screen shot here
+![screen shot 2014-05-04 at 11 06 27 am](https://cloud.githubusercontent.com/assets/5600355/2873673/ea382c46-d3b6-11e3-93ce-9e3abe3643ea.png)
 
 SMS Campaign Manager is an app built on the Django framework using Python, the Twilio API, and Bootstrap front-end.
 
