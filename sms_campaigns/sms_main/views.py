@@ -51,15 +51,31 @@ def checkToSendMessages():
             if m.total_messages_sent >= m.campaign.total_message_occurrences:
                 m.active = False
             m.save()
-            
+
+# putting this here for now, may want to move it to a different file
+def isAuthorizedEnroller(phone_number):
+    # hard coded for now. probably need to verify against the database
+    if phone_number == '+14155833353':
+        return True
+    else:
+        return False
+
+def isValidCampaignID(campaign_id):
+    # hard coded campaign id's
+    campaign_id = int(campaign_id)
+    campaign_ids = [1,2,3]
+    if campaign_id in campaign_ids:
+        return True
+    else:
+        return False
+
+def isPhoneNumber(num_string):
+    return len(num_string) == 10
+
 def sendMessage(phone_number, messageBody):
     account_sid = settings.TWILIO_ACCOUNT_SID
     auth_token  = settings.TWILIO_AUTH_TOKEN
     client = TwilioRestClient(account_sid, auth_token)
-
-    # hard code this in for now
-    # phone_number = "4155833353"
-    # messageBody = "Ahoy from the sms campaign!"
 
     message = client.messages.create(body=messageBody,
         to="+1" + phone_number, 
@@ -68,10 +84,48 @@ def sendMessage(phone_number, messageBody):
 
 @twilio_view
 def sms(request):
-    enrolleeNumber = request.POST.get('Body', '')
-    msg = 'Enrollment for %s confirmed' % (enrolleeNumber)
-    r = Response()
-    r.message(msg)
-    enrollmentMessage = 'You have been enrolled in this progam. Stay tuned!'
-    sendMessage(enrolleeNumber, enrollmentMessage)
-    return r
+    senderNumber = request.POST.get('From', '')
+
+    if isAuthorizedEnroller(senderNumber):
+        smsMessage = request.POST.get('Body', '')
+
+        if isPhoneNumber(smsMessage):
+            enrolleeNumber = smsMessage
+
+            # store the enrollee phone number in the session for use in between requests
+            request.session[senderNumber] = enrolleeNumber
+
+            # we're going to hard-code the campaign id's for now
+            campaignIDs = '1 - Malaria \n2 - Tuberculosis \n3 - Ryan Gosling Inspiration'
+            msg = 'Please select a campaign:\n %s' % (campaignIDs)
+            r = Response()
+            r.message(msg)
+
+            if enrolleeNumber == "6023192412":
+                sendMessage(enrolleeNumber, "Hey girl, fork me on Github. - Ryan")
+            return r
+
+        else:
+            if isValidCampaignID(smsMessage) and request.session[senderNumber] != None:
+                enrolleeNumber = request.session[senderNumber]
+                msg = 'Enrollment for %s confirmed' % (enrolleeNumber)
+                r = Response()
+                r.message(msg)
+                enrollmentMessage = 'You have been enrolled. Stay tuned!'
+                sendMessage(enrolleeNumber, enrollmentMessage)
+                request.session[senderNumber] = None
+                return r
+
+            else:
+                msg = 'Invalid request!'
+                r = Response()
+                r.message(msg)
+                return r
+    else:
+        enrolleeNumber = request.POST.get('From', '')
+        enrolleeMessage = request.POST.get('Body', '')
+        msg = 'Thanks for the update!'
+        r = Response()
+        r.message(msg)
+        request.session[senderNumber] = None
+        return r
