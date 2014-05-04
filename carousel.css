@@ -53,7 +53,9 @@ body {
 h1 {color: white; font-size: 50px;
   text-shadow: black 0.1em 0.1em 0.2em}
 
-
+.paddings {
+  padding-right: 5px;
+}
 
 /*.something {
   width: 100%;
