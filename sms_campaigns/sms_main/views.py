@@ -7,6 +7,8 @@ from django_twilio.decorators import twilio_view
 from twilio.twiml import Response
 from django.conf import settings
 from sms_campaigns import local_settings
+from sms_main.forms import *
+from django.shortcuts import render
 
 
 def addGroup(group_name):
@@ -154,3 +156,9 @@ def sms(request):
         r.message(msg)
         request.session[senderNumber] = None
         return r
+
+def campaign(request):
+    if request.method =="GET":
+        form = CampaignForm(request.GET)
+        data = {'form': form}
+        return render(request, "campaign.html", data)
