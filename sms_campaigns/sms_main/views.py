@@ -110,11 +110,12 @@ def sms(request):
             # pull campaign info
             group = Group.objects.get(id=1)
             camps = group.campaign_set.all()
+            campaignIDs = ''
 
             for camp in camps:
                 campID = str(camp.id)
                 campName = camp.name
-                campaignIDs = '\n' + campID + ' - ' + campName
+                campaignIDs = campaignIDs + '\n' + campID + ' - ' + campName
 
             # we're going to hard-code the campaign id's for now
             msg = 'Please select a campaign:\n %s' % (campaignIDs)
