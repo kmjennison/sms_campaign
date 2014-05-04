@@ -58,8 +58,8 @@ def sendMessage(phone_number, messageBody):
     client = TwilioRestClient(account_sid, auth_token)
 
     # hard code this in for now
-    phone_number = "4155833353"
-    messageBody = "Ahoy from the sms campaign!"
+    # phone_number = "4155833353"
+    # messageBody = "Ahoy from the sms campaign!"
 
     message = client.messages.create(body=messageBody,
         to="+1" + phone_number, 
