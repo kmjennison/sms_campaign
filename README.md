@@ -1,8 +1,8 @@
 # SMS Campaign Manager
 
-A simple way to create an SMS Campaign for NGOs.
+A simple way for NGOs to create an SMS reminder system and enroll people in it.
 
-Many people have access to text messaging but no access to internet, making texts an important method of communication for NGOs with a wide variety of applications. For example, text message reminders for taking medication on a schedule significantly improves adherence (http://www.ncbi.nlm.nih.gov/pubmed/22554973).
+Many people have access to text messaging but no access to internet, making texts an important method of communication for NGOs with a wide variety of applications. For example, text message reminders for taking medication on a schedule [significantly improves adherence](http://www.ncbi.nlm.nih.gov/pubmed/22554973).
 
 However, setting up text message communication systems generally requires an NGO to hire a developer, which is expensive and time-consuming.
 
@@ -16,13 +16,24 @@ SMS Campaign Manager is an app built on Django, the Twilio API, and a Bootstrap 
 
 Here's how to get going with your version:
 
-Clone the repository from GitHub - in your terminal/command line type
+1) Clone the repository from GitHub - in your terminal/command line, type:
 
 `$ git clone https://github.com/kmjennison/sms_campaign.git`
 
 `$ cd sms_campaign`
 
-TODO add instructions on how to install, configure, & run etc
+2) Install dependencies.
+`pip install -r conf/requirements.txt`
+
+3) Set up local database.
+  - In our settings.py `DATABASES` settings, we've called the database `sms_campaign` with user `root`; change this to whatever database you set up.
+  - Once you've set up a DB, migrate the tables with `python manage.py syncdb`
+  - Set up South migrationgs by running `python manage.py schemamigration sms_main --initial` followed by `python manage.py migrate sms_main`
+
+4) Configure Twilio settings.
+  - Sign up for a [Twilio](http://www.twilio.com/) account
+  - Add your `TWILIO_AUTH_TOKEN` in settings.py
+  - Change `TWILIO_ACCOUNT_SID` in settings.py
 
 ## TODO
 
@@ -30,6 +41,7 @@ TODO add instructions on how to install, configure, & run etc
 - Create custom messages per reminder (for example, if the second reminder needs a different message than the first)
 - Create a customizable callback function when a user responds to a text reminder
 - Make group signup form and handle authentication
+- Allow groups to enter phone numbers that are authenticated to enroll recipients in a campaign
 - Require Twilio API keys per group (so they can handle payment)
 - Style Django admin
 
