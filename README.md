@@ -35,6 +35,8 @@ Here's how to get going with your version:
   - Add your `TWILIO_AUTH_TOKEN` in settings.py
   - Change `TWILIO_ACCOUNT_SID` in settings.py
 
+5) To receive text messages, you'll need a web address to which Twilio can post data. We used [Ngrok](https://ngrok.com/).
+
 ## TODO
 
 - Make reminder scheduling more flexible, beyond just a recurring interval
