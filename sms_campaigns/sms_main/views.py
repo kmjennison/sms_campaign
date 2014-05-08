@@ -9,6 +9,8 @@ from django.conf import settings
 from sms_campaigns import local_settings
 # from sms_main.forms import *
 from django.shortcuts import render
+from django.template import Context, Template
+
 
 
 def addGroup(group_name):
@@ -21,13 +23,26 @@ def addCampaign(name, description, groupId, message_interval, repeats):
 def addRecipient(first_name, last_name, phone_number):
     Recipient.objects.get_or_create(first_name=first_name, last_name=last_name, phone_number=phone_number)
 
-def addRecipientToCampaign(phone_number, campaignId):
+def addRecipientToCampaign(phone_number, campaignId, no_response_contact):
     recip = Recipient.objects.get(phone_number=phone_number)
     camp = Campaign.objects.get(id=campaignId)
 
-    m = Membership(recipient=recip, campaign=camp)
+    m = Membership(recipient=recip, campaign=camp, no_response_contact=no_response_contact)
     m.save()
     
+def updateEnrolleeResponse(phone_number, message):
+    recip = Recipient.objects.get(phone_number=phone_number)
+    camp = Campaign.objects.get(id=campaignId)
+
+    m = Membership(recipient=recip, time_last_received_message=datetime.now, last_received_message=message)
+    m.save()
+
+def shouldTakeNoResponseAction(time_last_received_message, no_response_timeout):
+    seconds_since_last_message = timeElapsed(time_last_received_message)
+    if seconds_since_last_message >= no_response_timeout:
+        return True
+    return False
+
 # Returns seconds that have elapsed between datetime and now.
 def timeElapsed(datetime):
     now = datetime.utcnow().replace(tzinfo = pytz.utc)
@@ -56,13 +71,21 @@ def checkToSendMessages():
                 m.active = False
             m.save()
 
+        if shouldTakeNoResponseAction(m.time_last_received_message, m.campaign.no_response_timeout_in_seconds):
+            message = "Please call " + m.recipient.phone_number + " and follow-up about " + m.campaign.name
+            sendMessage(m.no_response_contact, message)
+
 # putting this here for now, may want to move it to a different file
 def isAuthorizedEnroller(phone_number):
     # hard coded for now. probably need to verify against the database table, but that's not set up yet
     if phone_number == '+14155833353':
         return True
-    else:
-        return False
+    return False
+
+def isEnrollee(phone_number):
+
+    #todo update this to look in the database
+    return False
 
 def isValidCampaignID(campaign_id):
 
@@ -119,7 +142,6 @@ def sms(request):
                 campName = camp.name
                 campaignIDs = campaignIDs + '\n' + campID + ' - ' + campName
 
-            # we're going to hard-code the campaign id's for now
             msg = 'Please select a campaign:\n %s' % (campaignIDs)
             r = Response()
             r.message(msg)
@@ -134,7 +156,7 @@ def sms(request):
                 campaignName = Campaign.objects.get(id=campaignID)
                 enrolleeNumber = request.session[senderNumber]
 
-                addRecipientToCampaign(enrolleeNumber, campaignID)
+                addRecipientToCampaign(enrolleeNumber, campaignID, senderNumber)
                 msg = 'Enrollment in %s confirmed for %s' % (campaignName, enrolleeNumber)
                 r = Response()
                 r.message(msg)
@@ -148,17 +170,28 @@ def sms(request):
                 r = Response()
                 r.message(msg)
                 return r
-    else:
-        enrolleeNumber = request.POST.get('From', '')
+    elif isEnrollee(senderNumber):
+        enrolleeNumber = senderNumber
         enrolleeMessage = request.POST.get('Body', '')
+        updateEnrolleeResponse(enrolleeNumber, enrolleeMessage)
+
         msg = 'Thanks for the update!'
+        r = Response()
+        r.message(msg)
+        request.session[senderNumber] = None
+        return r
+    else:
+        msg = "Hello! We don't know you yet!"
         r = Response()
         r.message(msg)
         request.session[senderNumber] = None
         return r
 
 def campaign(request):
-    if request.method =="GET":
-        form = CampaignForm(request.GET)
-        data = {'form': form}
-        return render(request, "campaign.html", data)
+    form = CampaignForm()
+    if request.method == 'POST':
+        form = CampaignForm(request.POST)
+    else:
+        form = CampaignForm()
+
+    return render(request, 'campaign.html', {'form': form})

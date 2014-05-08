@@ -19,6 +19,9 @@ class Membership(models.Model):
     active = models.BooleanField(default=True)
     time_last_sent_message = models.DateTimeField(default=datetime.now)
     total_messages_sent = models.IntegerField(default=0)
+    time_last_received_message = models.DateTimeField(default=datetime.now)
+    last_received_message = models.CharField(max_length=256)
+    no_response_contact = models.CharField(max_length=30)
 
 class Campaign(models.Model):
     def __unicode__(self):
@@ -30,6 +33,9 @@ class Campaign(models.Model):
     message_interval_in_seconds = models.BigIntegerField()
     total_message_occurrences = models.IntegerField(default=1)
     message_text = models.TextField()
+    response_requested = models.BooleanField(default=False)
+    no_response_timeout_in_seconds = models.BigIntegerField()
+    no_response_action = models.CharField(max_length=256)
     
 class Group(models.Model):
     def __unicode__(self):
