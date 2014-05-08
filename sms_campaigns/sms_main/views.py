@@ -10,6 +10,7 @@ from sms_campaigns import local_settings
 # from sms_main.forms import *
 from django.shortcuts import render
 from django.template import Context, Template
+from forms import CampaignForm
 
 
 
