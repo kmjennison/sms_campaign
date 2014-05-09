@@ -235,7 +235,6 @@ def sms(request):
                 multiplier = 3600
 
             message_interval = numeric_frequency * multiplier
-            print message_interval
 
             request.session['currField'] = 'message'
             request.session['msgInterval'] = message_interval
@@ -253,8 +252,6 @@ def sms(request):
             repeats = request.session['repeats']
             groupId = getGroupByPhoneNumber(senderNumber)
             message_interval = request.session['msgInterval']
-
-            print message_interval
 
             no_response_timeout_in_seconds = '1'
             no_response_action = 'None'
