@@ -7,12 +7,9 @@ from django_twilio.decorators import twilio_view
 from twilio.twiml import Response
 from django.conf import settings
 from sms_campaigns import local_settings
-# from sms_main.forms import *
+from forms import *
 from django.shortcuts import render
 from django.template import Context, Template
-from forms import CampaignForm
-
-
 
 def addGroup(group_name):
     Group.objects.create(name=group_name)
@@ -193,33 +190,33 @@ def sms(request):
             msg = "Creating new Campaign - Please respond with campaign name"
             r = Response()
             r.message(msg)
-            request.session['currField'] = 'name'
+            request.session['currField' + senderNumber] = 'name'
             return r
-        elif request.session['currField'] == 'name':
-            request.session['name'] = message
+        elif request.session['currField' + senderNumber] == 'name':
+            request.session['name' + senderNumber] = message
             msg = "Please respond with campaign description or say 'None' to leave blank"
             r = Response()
             r.message(msg)
-            request.session['currField'] = 'description'
+            request.session['currField' + senderNumber] = 'description'
             return r
             
-        elif request.session['currField'] == 'description':
-            request.session['description'] = message
+        elif request.session['currField' + senderNumber] == 'description':
+            request.session['description' + senderNumber] = message
             msg = "Please respond with number of messages to send in campaign"
             r = Response()
             r.message(msg)
-            request.session['currField'] = 'numMessage'
+            request.session['currField' + senderNumber] = 'numMessage'
             return r
             
-        elif request.session['currField'] == 'numMessage':
-            request.session['repeats'] = int(message)
+        elif request.session['currField' + senderNumber] == 'numMessage':
+            request.session['repeats' + senderNumber] = int(message)
             msg = "Please respond with message interval (e.g. '1 day' for once daily)"
             r = Response()
             r.message(msg)
-            request.session['currField'] = 'msgInterval'
+            request.session['currField' + senderNumber] = 'msgInterval'
             return r
             
-        elif request.session['currField'] == 'msgInterval':
+        elif request.session['currField' + senderNumber] == 'msgInterval':
             message = message.split(' ')
             numeric_frequency = int(message[0])
             str_frequency = message[1]
@@ -236,22 +233,22 @@ def sms(request):
 
             message_interval = numeric_frequency * multiplier
 
-            request.session['currField'] = 'message'
-            request.session['msgInterval'] = message_interval
+            request.session['currField' + senderNumber] = 'message'
+            request.session['msgInterval' + senderNumber] = message_interval
             
             msg = "Please respond with message you'd like to send out"
             r = Response()
             r.message(msg)
             return r
 
-        elif request.session['currField'] == 'message':
-            name = request.session['name']
-            description = request.session['description']
+        elif request.session['currField' + senderNumber] == 'message':
+            name = request.session['name' + senderNumber]
+            description = request.session['description' + senderNumber]
             if description is 'None':
                 description = None
-            repeats = request.session['repeats']
+            repeats = request.session['repeats' + senderNumber]
             groupId = getGroupByPhoneNumber(senderNumber)
-            message_interval = request.session['msgInterval']
+            message_interval = request.session['msgInterval' + senderNumber]
 
             no_response_timeout_in_seconds = '1'
             no_response_action = 'None'
