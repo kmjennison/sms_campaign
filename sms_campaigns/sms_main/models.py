@@ -1,5 +1,8 @@
 from django.db import models
 from datetime import datetime
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+# from django.db.models.signals import *
 
 class Recipient(models.Model):
     def __unicode__(self):
@@ -43,3 +46,23 @@ class Group(models.Model):
     
     name = models.CharField(max_length=256)
     description = models.TextField(blank=True)
+
+class UserProfile(models.Model):
+    def __unicode__(self):
+        return str(self.user)
+
+    user = models.OneToOneField(User)
+
+    # fields that I think make sense
+    isGroupManager = models.BooleanField(default=False)
+    isCampaignManager = models.BooleanField(default=False)
+    isAuthorizedEnroller = models.BooleanField(default=False)
+    group = models.ForeignKey('Group', null=True)
+    campaign = models.ForeignKey('Campaign', null=True)
+
+# does this get called at the time of user creation...???
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+post_save.connect(create_user_profile, sender=User)

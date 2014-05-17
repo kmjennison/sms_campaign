@@ -104,6 +104,7 @@ MIDDLEWARE_CLASSES = (
 )
 
 ROOT_URLCONF = 'sms_campaigns.urls'
+AUTH_PROFILE_MODULE = 'sms_main.UserProfile'
 
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'sms_campaigns.wsgi.application'

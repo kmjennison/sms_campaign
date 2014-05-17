@@ -75,20 +75,39 @@ def checkToSendMessages():
 
 # putting this here for now, may want to move it to a different file
 def isAuthorizedEnroller(phone_number):
-    # hard coded for now. will need to verify against the database table
-    if phone_number == '4444':
-        return True
-    return False
+    # pseudocode-y
+    user = Users.objects.get(phone_number=phone_number)
+    userProfile = user.get_profile()
+
+    return userProfile.isAuthorizedEnroller
 
 def isEnrollee(phone_number):
-    #todo update this to look in the database
+    recip = Recipient.objects.get(phone_number=phone_number)
+    if recip:
+        return True
+        
     return False
 
 def isCampaignCreator(phone_number):
-    return True
+    # pseudocode-y
+    user = Users.objects.get(phone_number=phone_number)
+    userProfile = user.get_profile()
+
+    return userProfile.isGroupManager
 
 def getGroupByPhoneNumber(phone_number):
-    return 1
+    # pseudocode-y
+    user = Users.objects.get(phone_number=phone_number)
+    userProfile = user.get_profile()
+
+    return userProfile.group
+
+def getCampaignByPhoneNumber(phone_number):
+    # pseudocode-y
+    user = Users.objects.get(phone_number=phone_number)
+    userProfile = user.get_profile()
+
+    return userProfile.campaign
 
 def isValidCampaignID(campaign_id):
 
