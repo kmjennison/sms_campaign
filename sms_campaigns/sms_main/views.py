@@ -7,7 +7,7 @@ from django_twilio.decorators import twilio_view
 from twilio.twiml import Response
 from django.conf import settings
 from sms_campaigns import local_settings
-from forms import *
+from django.forms import *
 from django.shortcuts import render
 from django.template import Context, Template
 
