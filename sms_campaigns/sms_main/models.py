@@ -58,7 +58,7 @@ class UserProfile(models.Model):
     isCampaignManager = models.BooleanField(default=False)
     isAuthorizedEnroller = models.BooleanField(default=False)
     group = models.ForeignKey('Group', null=True)
-    campaign = models.ForeignKey('Campaign', null=True)
+    campaign = models.ForeignKey('Campaign', null=True, blank=True)
 
 # does this get called at the time of user creation...???
 def create_user_profile(sender, instance, created, **kwargs):
