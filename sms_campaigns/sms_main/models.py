@@ -22,9 +22,9 @@ class Membership(models.Model):
     active = models.BooleanField(default=True)
     time_last_sent_message = models.DateTimeField(default=datetime.now)
     total_messages_sent = models.IntegerField(default=0)
-    time_last_received_message = models.DateTimeField(default=datetime.now)
-    last_received_message = models.CharField(max_length=256)
-    no_response_contact = models.CharField(max_length=30)
+    time_last_received_message = models.DateTimeField(default=datetime.now, null=True, blank=True)
+    last_received_message = models.CharField(max_length=256, null=True, blank=True)
+    no_response_contact = models.CharField(max_length=30, null=True, blank=True)
 
 class Campaign(models.Model):
     def __unicode__(self):
