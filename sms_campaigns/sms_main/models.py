@@ -52,11 +52,6 @@ class UserProfile(models.Model):
         return str(self.user)
 
     user = models.OneToOneField(User)
-
-    # fields that I think make sense
-    isGroupManager = models.BooleanField(default=False)
-    isCampaignManager = models.BooleanField(default=False)
-    isAuthorizedEnroller = models.BooleanField(default=False)
     group = models.ForeignKey('Group', null=True)
     campaign = models.ForeignKey('Campaign', null=True, blank=True)
 
