@@ -2,15 +2,15 @@ from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
-# from django.db.models.signals import *
+from phonenumber_field.modelfields import PhoneNumberField
 
 class Recipient(models.Model):
     def __unicode__(self):
-        return self.first_name + ' ' + self.last_name
+        return str(self.phone_number) + ': ' + self.first_name + ' ' + self.last_name
     
-    first_name = models.CharField(max_length=256)
-    last_name = models.CharField(max_length=256)
-    phone_number = models.CharField(max_length=30)
+    first_name = models.CharField(max_length=256, blank=True, null=True)
+    last_name = models.CharField(max_length=256, blank=True, null=True)
+    phone_number = PhoneNumberField(blank=True, null=True, unique=True)
     campaigns = models.ManyToManyField('Campaign', through='Membership')
 
 class Membership(models.Model):
@@ -54,6 +54,8 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User)
     group = models.ForeignKey('Group', null=True)
     campaign = models.ForeignKey('Campaign', null=True, blank=True)
+    phone_number = PhoneNumberField(blank=True, null=True, help_text="Format this as +1234567890.")
+    permitted_enroller = models.BooleanField(default=False, verbose_name="This person is allowed to enroll people in campaigns via text.")
 
 # does this get called at the time of user creation...???
 def create_user_profile(sender, instance, created, **kwargs):

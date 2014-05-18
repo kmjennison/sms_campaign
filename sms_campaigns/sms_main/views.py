@@ -10,6 +10,7 @@ from sms_campaigns import local_settings
 from django.forms import *
 from django.shortcuts import render
 from django.template import Context, Template
+from django.core.exceptions import ObjectDoesNotExist
 
 def addGroup(group_name):
     Group.objects.create(name=group_name)
@@ -18,7 +19,7 @@ def addCampaign(name, description, groupId, message_interval, repeats, message, 
     group = Group.objects.get(id=groupId)
     Campaign.objects.create(name=name, description=description, group=group, message_interval_in_seconds=message_interval, total_message_occurrences=repeats, message_text=message, no_response_timeout_in_seconds=no_response_timeout_in_seconds, no_response_action=no_response_action)
     
-def addRecipient(first_name, last_name, phone_number):
+def addRecipient(phone_number, first_name='', last_name=''):
     Recipient.objects.get_or_create(first_name=first_name, last_name=last_name, phone_number=phone_number)
 
 def addRecipientToCampaign(phone_number, campaignId, no_response_contact):
@@ -27,14 +28,16 @@ def addRecipientToCampaign(phone_number, campaignId, no_response_contact):
 
     m = Membership(recipient=recip, campaign=camp, no_response_contact=no_response_contact)
     m.save()
-    
-def updateEnrolleeResponse(phone_number, message):
-    recip = Recipient.objects.get(phone_number=phone_number)
-    camp = Campaign.objects.get(id=campaignId)
 
-    m = Membership(recipient=recip, time_last_received_message=datetime.now, last_received_message=message)
-    m.save()
+# TODO: Fix.
+# def updateEnrolleeResponse(phone_number, message):
+#     recip = Recipient.objects.get(phone_number=phone_number)
+#     camp = Campaign.objects.get(id=campaignId)
+# 
+#     m = Membership(recipient=recip, time_last_received_message=datetime.now, last_received_message=message)
+#     m.save()
 
+# TODO: Change no_response_timeout to time *after* message was delivered, not absolute time.
 def shouldTakeNoResponseAction(time_last_received_message, no_response_timeout):
     seconds_since_last_message = timeElapsed(time_last_received_message)
     if seconds_since_last_message >= no_response_timeout:
@@ -70,49 +73,31 @@ def checkToSendMessages():
             m.save()
 
         if shouldTakeNoResponseAction(m.time_last_received_message, m.campaign.no_response_timeout_in_seconds):
-            message = "Please call " + m.recipient.phone_number + " and follow-up about " + m.campaign.name
+            message = "Please call " + str(m.recipient.phone_number) + " and follow-up about " + m.campaign.name
             sendMessage(m.no_response_contact, message)
 
 # putting this here for now, may want to move it to a different file
 def isAuthorizedEnroller(phone_number):
-    # pseudocode-y
-    user = Users.objects.get(phone_number=phone_number)
-    userProfile = user.get_profile()
-
-    return userProfile.isAuthorizedEnroller
+    try:
+        up = UserProfile.objects.get(phone_number=phone_number)
+        return up.permitted_enroller
+    except ObjectDoesNotExist:
+        return False
 
 def isEnrollee(phone_number):
-    recip = Recipient.objects.get(phone_number=phone_number)
-    if recip:
-        return True
-        
-    return False
-
-def isCampaignCreator(phone_number):
-    # pseudocode-y
-    user = Users.objects.get(phone_number=phone_number)
-    userProfile = user.get_profile()
-
-    return userProfile.isGroupManager
+    try:
+        recip = Recipient.objects.get(phone_number=phone_number)
+        if recip:
+            return True
+    except ObjectDoesNotExist:
+        return False
 
 def getGroupByPhoneNumber(phone_number):
-    # pseudocode-y
-    user = Users.objects.get(phone_number=phone_number)
-    userProfile = user.get_profile()
+    up = UserProfile.objects.get(phone_number=phone_number)
+    return up.group
 
-    return userProfile.group
-
-def getCampaignByPhoneNumber(phone_number):
-    # pseudocode-y
-    user = Users.objects.get(phone_number=phone_number)
-    userProfile = user.get_profile()
-
-    return userProfile.campaign
-
-def isValidCampaignID(campaign_id):
-
+def isValidCampaignID(campaign_id, group):
     # pull campaign info
-    group = Group.objects.get(id=1)
     camps = group.campaign_set.all()
 
     campaign_ids = [];
@@ -124,36 +109,50 @@ def isValidCampaignID(campaign_id):
     else:
         return False
 
+# TODO: incorporate a better check.
 def isPhoneNumber(num_string):
     return len(num_string) == 10
+    
+# TODO: incorporate better formatting to allow for hyphens and leading country code.
+# Currently accepts a 10-digit number string with no hyphens.
+def formatPhoneNumber(phone_number):
+    return "+1" + str(phone_number)
 
 def sendMessage(phone_number, messageBody):
     account_sid = settings.TWILIO_ACCOUNT_SID
     auth_token  = local_settings.TWILIO_AUTH_TOKEN
     client = TwilioRestClient(account_sid, auth_token)
 
+    phone_number = str(phone_number)
     message = client.messages.create(body=messageBody,
-        to="+1" + phone_number, 
+        to=phone_number, 
         from_="+13312096805")
-    print "Sending message to " + phone_number + ": " + messageBody
+    print "Sending message to " + str(phone_number) + ": " + messageBody
 
-@twilio_view
-def sms(request):
-    senderNumber = request.POST.get('From', '')
+def invalidRequest(errorString):
+    print errorString
+    msg = 'Invalid request!'
+    r = Response()
+    r.message(msg)
+    return r
 
-    if isAuthorizedEnroller(senderNumber):
-        smsMessage = request.POST.get('Body', '')
+def authorizedEnrollerResponse(senderNumber, smsMessage, request):
+    # print('User is an authorized enroller.')
 
-        if isPhoneNumber(smsMessage):
-            enrolleeNumber = smsMessage
-
+    # If they texted a phone number, enroll that person.
+    if isPhoneNumber(smsMessage):
+        try:
+            enrolleeNumber = formatPhoneNumber(smsMessage)
+            
             # store the enrollee phone number in the session for use in between requests
-            request.session[senderNumber] is enrolleeNumber
+            request.session[senderNumber] = enrolleeNumber
 
-            addRecipient('J', 'Doe', enrolleeNumber)
+            addRecipient(phone_number=enrolleeNumber)
 
-            # pull campaign info
-            group = Group.objects.get(id=1)
+            # Get the group the enroller belongs to.
+            group = getGroupByPhoneNumber(senderNumber)
+
+            # Pull campaign info for that group.
             camps = group.campaign_set.all()
             campaignIDs = ''
 
@@ -165,147 +164,174 @@ def sms(request):
             msg = 'Please select a campaign:\n %s' % (campaignIDs)
             r = Response()
             r.message(msg)
-
-            if enrolleeNumber == local_settings.ALYSON_NUMBER:
-                sendMessage(enrolleeNumber, "Hey girl, fork me on Github. - Ryan")
             return r
-
-        else:
+        except Exception as e:
+            return invalidRequest('Error: could not enroll user.')
+        
+    else:
+        try:
             campaignID = int(smsMessage)
-            if isValidCampaignID(campaignID) and request.session[senderNumber] != None:
-                campaignName = Campaign.objects.get(id=campaignID)
+            # Get the group the enroller belongs to.
+            group = getGroupByPhoneNumber(senderNumber)
+            
+            if isValidCampaignID(campaignID, group) and (request.session[senderNumber] != None):
+                campaignName = Campaign.objects.get(id=campaignID).name
                 enrolleeNumber = request.session[senderNumber]
-
                 addRecipientToCampaign(enrolleeNumber, campaignID, senderNumber)
                 msg = 'Enrollment in %s confirmed for %s' % (campaignName, enrolleeNumber)
                 r = Response()
                 r.message(msg)
-                enrollmentMessage = 'You have been enrolled for %s. Stay tuned!' % (campaignName)
+                enrollmentMessage = 'You have been enrolled in %s. Stay tuned!' % (campaignName)
                 sendMessage(enrolleeNumber, enrollmentMessage)
                 request.session[senderNumber] = None
                 return r
-
             else:
-                msg = 'Invalid request!'
-                r = Response()
-                r.message(msg)
-                return r
+                return invalidRequest('Sorry, we could not find that campaign ID.')
+        except Exception as e:
+            return invalidRequest('Error: could not find that campaign ID.')
+                
+    return invalidRequest('Not a valid enrollment or campaign.')
 
-    elif isEnrollee(senderNumber):
-        enrolleeNumber = senderNumber
-        enrolleeMessage = request.POST.get('Body', '')
-        updateEnrolleeResponse(enrolleeNumber, enrolleeMessage)
+def enrolleeResponse(senderNumber, smsMessage, request):
+    # print('User is an enrollee.')
+    try:
+        # TODO: Fix.
+        # enrolleeNumber = senderNumber
+        # enrolleeMessage = smsMessage
+        # updateEnrolleeResponse(enrolleeNumber, enrolleeMessage)
 
         msg = 'Thanks for the update!'
         r = Response()
         r.message(msg)
         request.session[senderNumber] = None
         return r
+    except Exception as e:
+        return invalidRequest('Error: could not reply to enrollee.')
 
-    elif isCampaignCreator(senderNumber):
-        message = request.POST.get('Body', '')
+### Not currently used.
+# def campaignCreatorResponse(senderNumber, smsMessage):
+#     message = smsMessage
+# 
+#     if message.upper() == "NEW":
+#         msg = "Creating new Campaign - Please respond with campaign name"
+#         r = Response()
+#         r.message(msg)
+#         request.session['currField' + senderNumber] = 'name'
+#         return r
+#     elif request.session['currField' + senderNumber] == 'name':
+#         request.session['name' + senderNumber] = message
+#         msg = "Please respond with campaign description or say 'None' to leave blank"
+#         r = Response()
+#         r.message(msg)
+#         request.session['currField' + senderNumber] = 'description'
+#         return r
+# 
+#     elif request.session['currField' + senderNumber] == 'description':
+#         request.session['description' + senderNumber] = message
+#         msg = "Please respond with number of messages to send in campaign"
+#         r = Response()
+#         r.message(msg)
+#         request.session['currField' + senderNumber] = 'numMessage'
+#         return r
+# 
+#     elif request.session['currField' + senderNumber] == 'numMessage':
+#         request.session['repeats' + senderNumber] = int(message)
+#         msg = "Please respond with message interval (e.g. '1 day' for once daily)"
+#         r = Response()
+#         r.message(msg)
+#         request.session['currField' + senderNumber] = 'msgInterval'
+#         return r
+# 
+#     elif request.session['currField' + senderNumber] == 'msgInterval':
+#         message = message.split(' ')
+#         numeric_frequency = int(message[0])
+#         str_frequency = message[1]
+#         multiplier = 3600
+# 
+#         if 'day' in str_frequency:
+#             multiplier = 86400
+#         elif 'week' in str_frequency:
+#             multiplier = 604800
+#         elif 'month' in str_frequency:
+#             multiplier = 2.63e+6
+#         else:
+#             multiplier = 3600
+# 
+#         message_interval = numeric_frequency * multiplier
+# 
+#         request.session['currField' + senderNumber] = 'message'
+#         request.session['msgInterval' + senderNumber] = message_interval
+# 
+#         msg = "Please respond with message you'd like to send out"
+#         r = Response()
+#         r.message(msg)
+#         return r
+# 
+#     elif request.session['currField' + senderNumber] == 'message':
+#         name = request.session['name' + senderNumber]
+#         description = request.session['description' + senderNumber]
+#         if description is 'None':
+#             description = None
+#         repeats = request.session['repeats' + senderNumber]
+#         groupId = getGroupByPhoneNumber(senderNumber)
+#         message_interval = request.session['msgInterval' + senderNumber]
+# 
+#         no_response_timeout_in_seconds = '1'
+#         no_response_action = 'None'
+# 
+#         addCampaign(name, description, groupId, message_interval, repeats, message, no_response_timeout_in_seconds, no_response_action)
+#         msg = "New campaign successfully created"
+#         r = Response()
+#         r.message(msg)
+# 
+#         request.session['currField'] = None
+#         request.session['name'] = None
+#         request.session['description'] = None
+#         request.session['repeats'] = None
+#         return r
+# 
+#     else:
+#         msg = 'Invalid request'
+#         request.session['currField'] = None
+#         request.session['name'] = None
+#         request.session['description'] = None
+#         request.session['repeats'] = None
+#         r = Response()
+#         r.message(msg)
+# 
+#         return r
 
-        if message.upper() == "NEW":
-            msg = "Creating new Campaign - Please respond with campaign name"
-            r = Response()
-            r.message(msg)
-            request.session['currField' + senderNumber] = 'name'
-            return r
-        elif request.session['currField' + senderNumber] == 'name':
-            request.session['name' + senderNumber] = message
-            msg = "Please respond with campaign description or say 'None' to leave blank"
-            r = Response()
-            r.message(msg)
-            request.session['currField' + senderNumber] = 'description'
-            return r
-            
-        elif request.session['currField' + senderNumber] == 'description':
-            request.session['description' + senderNumber] = message
-            msg = "Please respond with number of messages to send in campaign"
-            r = Response()
-            r.message(msg)
-            request.session['currField' + senderNumber] = 'numMessage'
-            return r
-            
-        elif request.session['currField' + senderNumber] == 'numMessage':
-            request.session['repeats' + senderNumber] = int(message)
-            msg = "Please respond with message interval (e.g. '1 day' for once daily)"
-            r = Response()
-            r.message(msg)
-            request.session['currField' + senderNumber] = 'msgInterval'
-            return r
-            
-        elif request.session['currField' + senderNumber] == 'msgInterval':
-            message = message.split(' ')
-            numeric_frequency = int(message[0])
-            str_frequency = message[1]
-            multiplier = 3600
-
-            if 'day' in str_frequency:
-                multiplier = 86400
-            elif 'week' in str_frequency:
-                multiplier = 604800
-            elif 'month' in str_frequency:
-                multiplier = 2.63e+6
-            else:
-                multiplier = 3600
-
-            message_interval = numeric_frequency * multiplier
-
-            request.session['currField' + senderNumber] = 'message'
-            request.session['msgInterval' + senderNumber] = message_interval
-            
-            msg = "Please respond with message you'd like to send out"
-            r = Response()
-            r.message(msg)
-            return r
-
-        elif request.session['currField' + senderNumber] == 'message':
-            name = request.session['name' + senderNumber]
-            description = request.session['description' + senderNumber]
-            if description is 'None':
-                description = None
-            repeats = request.session['repeats' + senderNumber]
-            groupId = getGroupByPhoneNumber(senderNumber)
-            message_interval = request.session['msgInterval' + senderNumber]
-
-            no_response_timeout_in_seconds = '1'
-            no_response_action = 'None'
-
-            addCampaign(name, description, groupId, message_interval, repeats, message, no_response_timeout_in_seconds, no_response_action)
-            msg = "New campaign successfully created"
-            r = Response()
-            r.message(msg)
-
-            request.session['currField'] = None
-            request.session['name'] = None
-            request.session['description'] = None
-            request.session['repeats'] = None
-            return r
+@twilio_view
+def sms(request):
+    try:
+        senderNumber = request.POST.get('From', '')
+        smsMessage = request.POST.get('Body', '')
+    
+        # Check if the person texting is authorized to enroll people.
+        if isAuthorizedEnroller(senderNumber):
+            return authorizedEnrollerResponse(senderNumber, smsMessage, request)
         
+        # Check if the person texting is a recipient.
+        elif isEnrollee(senderNumber):
+            return enrolleeResponse(senderNumber, smsMessage, request)
+        
+        # Else, it's an unknown person.
         else:
-            msg = 'Invalid request'
-            request.session['currField'] = None
-            request.session['name'] = None
-            request.session['description'] = None
-            request.session['repeats'] = None
+            msg = "Hello! We don't know you yet. If you're part of a group, please contact your group administrator."
             r = Response()
             r.message(msg)
-
+            request.session[senderNumber] = None
             return r
+    except Exception as e:
+        # print e
+        return invalidRequest('Error.')
 
-    else:
-        msg = "Hello! We don't know you yet!"
-        r = Response()
-        r.message(msg)
-        request.session[senderNumber] = None
-        return r
-
-def campaign(request):
-    form = CampaignForm()
-    if request.method == 'POST':
-        form = CampaignForm(request.POST)
-    else:
-        form = CampaignForm()
-
-    return render(request, 'campaign.html', {'form': form})
+### Not currently using.
+# def campaign(request):
+#     form = CampaignForm()
+#     if request.method == 'POST':
+#         form = CampaignForm(request.POST)
+#     else:
+#         form = CampaignForm()
+# 
+#     return render(request, 'campaign.html', {'form': form})
