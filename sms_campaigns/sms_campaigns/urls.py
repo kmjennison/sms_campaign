@@ -10,6 +10,7 @@ urlpatterns = patterns('',
     # url(r'^$', 'sms_campaigns.views.home', name='home'),
     # url(r'^sms_campaigns/', include('sms_campaigns.foo.urls')),
     
+    url(r'^$', 'sms_main.views.home', name='home'),
     url(r'^sms/$', sms),
     
     # Uncomment the admin/doc line below to enable admin documentation:
@@ -20,5 +21,7 @@ urlpatterns = patterns('',
     
     url(r'^campaign/', 'sms_main.views.campaign'),
 
-    url(r'^sms$', sms)
+    url(r'^sms$', sms),
+
+    url(r'^sign_up$', 'sms_main.views.sign_up')
 )

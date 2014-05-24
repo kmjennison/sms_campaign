@@ -46,6 +46,8 @@ class Group(models.Model):
     
     name = models.CharField(max_length=256)
     description = models.TextField(blank=True)
+    ein = models.CharField(blank=True, max_length=256)
+    isActive = models.BooleanField(default=False)
 
 class UserProfile(models.Model):
     def __unicode__(self):

@@ -10,6 +10,13 @@ from sms_campaigns import local_settings
 from forms import *
 from django.shortcuts import render
 from django.template import Context, Template
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
+from django.contrib import admin
 
 def addGroup(group_name):
     Group.objects.create(name=group_name)
@@ -85,7 +92,7 @@ def isEnrollee(phone_number):
     recip = Recipient.objects.get(phone_number=phone_number)
     if recip:
         return True
-        
+
     return False
 
 def isCampaignCreator(phone_number):
@@ -309,3 +316,39 @@ def campaign(request):
         form = CampaignForm()
 
     return render(request, 'campaign.html', {'form': form})
+
+def home(request):
+    return render(request, 'index.html')
+
+@csrf_exempt
+def sign_up(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        organization = request.POST.get('organization')
+        phonenumber = request.POST.get('phonenumber')
+        ein = request.POST.get('ein')
+        isActive = False
+
+        # check if organization already exists
+        try:
+            group = Group.objects.get(name=organization)
+        except:
+            addGroup(organization)
+            group = Group.objects.get(name=organization)
+
+        print group
+
+        user = User.objects.create_user(username, email, password)
+        user.save()
+        userProfile = user.get_profile()
+        userProfile.group = group
+        userProfile.save()
+
+        user = authenticate(username=username, password=password)
+        login(request, user)
+
+        return HttpResponse(reverse('admin:index'))
+    else:
+        return render(request, 'sign_up.html')
