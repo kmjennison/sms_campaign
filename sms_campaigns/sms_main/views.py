@@ -117,8 +117,40 @@ def isValidCampaignID(campaign_id, group):
         return False
 
 # TODO: incorporate a better check.
+# currently checks for US numbers only
 def isPhoneNumber(num_string):
-    return len(num_string) == 10
+    formatted_string = formatString(num_string)
+
+    try:
+        phone_number = int(formatted_string)
+        if len(num_string) == 10 or len(num_string) == 11:
+            return True
+        else:
+            return False
+
+    except ValueError:
+        return False
+
+# remove white spaces, anywhere
+# replace anything that people might use to format phone numbers
+# and make into just a number
+def formatString(string):
+
+    string.strip()
+    string.replace(' ', '')
+    string.replace('-', '')
+    string.replace('.', '')
+    string.replace('(', '')
+    string.replace(')', '')
+    string.replace('+', '')
+
+    return string
+
+def removeCountryCode(num_string):
+    if len(num_string) == 11:
+        return num_string[1:]
+    else:
+        return num_string
     
 # TODO: incorporate better formatting to allow for hyphens and leading country code.
 # Currently accepts a 10-digit number string with no hyphens.
@@ -144,12 +176,12 @@ def invalidRequest(errorString):
     return r
 
 def authorizedEnrollerResponse(senderNumber, smsMessage, request):
-    # print('User is an authorized enroller.')
 
+    formattedMessage = formatString(smsMessage)
     # If they texted a phone number, enroll that person.
-    if isPhoneNumber(smsMessage):
+    if isPhoneNumber(formattedMessage):
         try:
-            enrolleeNumber = formatPhoneNumber(smsMessage)
+            enrolleeNumber = formatPhoneNumber(removeCountryCode(formattedMessage))
             
             # store the enrollee phone number in the session for use in between requests
             request.session[senderNumber] = enrolleeNumber
@@ -200,7 +232,6 @@ def authorizedEnrollerResponse(senderNumber, smsMessage, request):
     return invalidRequest('Not a valid enrollment or campaign.')
 
 def enrolleeResponse(senderNumber, smsMessage, request):
-    # print('User is an enrollee.')
     try:
         # TODO: Fix.
         # enrolleeNumber = senderNumber
@@ -214,6 +245,67 @@ def enrolleeResponse(senderNumber, smsMessage, request):
         return r
     except Exception as e:
         return invalidRequest('Error: could not reply to enrollee.')
+
+@twilio_view
+def sms(request):
+    try:
+        senderNumber = request.POST.get('From', '')
+        smsMessage = request.POST.get('Body', '')
+    
+        # Check if the person texting is authorized to enroll people.
+        if isAuthorizedEnroller(senderNumber):
+            return authorizedEnrollerResponse(senderNumber, smsMessage, request)
+        
+        # Check if the person texting is a recipient.
+        elif isEnrollee(senderNumber):
+            return enrolleeResponse(senderNumber, smsMessage, request)
+        
+        # Else, it's an unknown person.
+        else:
+            msg = "Hello! We don't know you yet. If you're part of a group, please contact your group administrator."
+            r = Response()
+            r.message(msg)
+            request.session[senderNumber] = None
+            return r
+    except Exception as e:
+        # print e
+        return invalidRequest('Error.')
+
+def home(request):
+    return render(request, 'index.html')
+
+@csrf_exempt
+def sign_up(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        organization = request.POST.get('organization')
+        phonenumber = request.POST.get('phonenumber')
+        ein = request.POST.get('ein')
+        isActive = False
+
+        # check if organization already exists
+        try:
+            group = Group.objects.get(name=organization)
+        except:
+            addGroup(organization)
+            group = Group.objects.get(name=organization)
+
+        print group
+
+        user = User.objects.create_user(username, email, password)
+        user.save()
+        userProfile = user.get_profile()
+        userProfile.group = group
+        userProfile.save()
+
+        user = authenticate(username=username, password=password)
+        login(request, user)
+
+        return HttpResponse(reverse('admin:index'))
+    else:
+        return render(request, 'sign_up.html')
 
 ### Not currently used.
 # def campaignCreatorResponse(senderNumber, smsMessage):
@@ -307,67 +399,6 @@ def enrolleeResponse(senderNumber, smsMessage, request):
 #         r.message(msg)
 # 
 #         return r
-
-@twilio_view
-def sms(request):
-    try:
-        senderNumber = request.POST.get('From', '')
-        smsMessage = request.POST.get('Body', '')
-    
-        # Check if the person texting is authorized to enroll people.
-        if isAuthorizedEnroller(senderNumber):
-            return authorizedEnrollerResponse(senderNumber, smsMessage, request)
-        
-        # Check if the person texting is a recipient.
-        elif isEnrollee(senderNumber):
-            return enrolleeResponse(senderNumber, smsMessage, request)
-        
-        # Else, it's an unknown person.
-        else:
-            msg = "Hello! We don't know you yet. If you're part of a group, please contact your group administrator."
-            r = Response()
-            r.message(msg)
-            request.session[senderNumber] = None
-            return r
-    except Exception as e:
-        # print e
-        return invalidRequest('Error.')
-
-def home(request):
-    return render(request, 'index.html')
-
-@csrf_exempt
-def sign_up(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        organization = request.POST.get('organization')
-        phonenumber = request.POST.get('phonenumber')
-        ein = request.POST.get('ein')
-        isActive = False
-
-        # check if organization already exists
-        try:
-            group = Group.objects.get(name=organization)
-        except:
-            addGroup(organization)
-            group = Group.objects.get(name=organization)
-
-        print group
-
-        user = User.objects.create_user(username, email, password)
-        user.save()
-        userProfile = user.get_profile()
-        userProfile.group = group
-        userProfile.save()
-
-        user = authenticate(username=username, password=password)
-        login(request, user)
-
-        return HttpResponse(reverse('admin:index'))
-    else:
-        return render(request, 'sign_up.html')
 
 ### Not currently using.
 # def campaign(request):
