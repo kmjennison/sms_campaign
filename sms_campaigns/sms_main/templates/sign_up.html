@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      {% load static %}
+      <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+      <script type="text/javascript" src="{% static 'js/jquery-1.11.1.min.js' %}"></script>
+      <script type="text/javascript" src="{% static 'js/bootstrap.min.js' %}"></script>
+      <script type="text/javascript" src="{% static 'js/sign_up.js' %}"></script>
+   </head>
+   <body>
+      <div class="container">
+         <form role="form" id="sign_up">
+            <div>
+               <h3>
+                  Get Started
+               </h3>
+               <hr/>
+            </div>
+            <div class="form-group">
+              <label for="username">User Name</label>
+              <input type="text" class="form-control required" name="username" placeholder="jon">
+            </div>
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" class="form-control" name="email" placeholder="jon@snow.com">
+            </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" class="form-control" name="password" placeholder="Password">
+            </div>
+            <div class="form-group">
+              <label for="organization">Organization Name</label>
+              <input type="text" class="form-control" name="organization" placeholder="Night's Watch Inc.">
+            </div>
+            <div class="form-group">
+              <label for="organization">Organization EIN</label>
+              <input type="text" class="form-control" name="ein" placeholder="For non-profits only">
+            </div>
+            <div class="form-group">
+              <label for="phonenumber">Phone Number</label>
+              <input type="text" class="form-control" name="phonenumber" placeholder="012-345-6789">
+            </div>
+            <button type="submit" class="btn btn-primary">Create Account</button>
+         </form>
+      </div>
+   </body>
+</html>
