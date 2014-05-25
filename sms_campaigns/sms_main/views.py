@@ -116,14 +116,14 @@ def isValidCampaignID(campaign_id, group):
     else:
         return False
 
-# TODO: incorporate a better check.
-# currently checks for US numbers only
+# TODO: incorporate a better check?
+# Currently checks for US numbers only
 def isPhoneNumber(num_string):
     formatted_string = formatString(num_string)
 
     try:
         phone_number = int(formatted_string)
-        if len(num_string) == 10 or len(num_string) == 11:
+        if len(str(phone_number)) == 10 or len(str(phone_number)) == 11:
             return True
         else:
             return False
@@ -133,7 +133,7 @@ def isPhoneNumber(num_string):
 
 # remove white spaces, anywhere
 # replace anything that people might use to format phone numbers
-# and make into just a number
+# and make into just a number... maybe
 def formatString(string):
 
     string.strip()
