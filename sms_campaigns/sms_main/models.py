@@ -2,15 +2,15 @@ from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
-# from django.db.models.signals import *
+from phonenumber_field.modelfields import PhoneNumberField
 
 class Recipient(models.Model):
     def __unicode__(self):
-        return self.first_name + ' ' + self.last_name
+        return str(self.phone_number) + ': ' + self.first_name + ' ' + self.last_name
     
-    first_name = models.CharField(max_length=256)
-    last_name = models.CharField(max_length=256)
-    phone_number = models.CharField(max_length=30)
+    first_name = models.CharField(max_length=256, blank=True, null=True)
+    last_name = models.CharField(max_length=256, blank=True, null=True)
+    phone_number = PhoneNumberField(blank=True, null=True, unique=True)
     campaigns = models.ManyToManyField('Campaign', through='Membership')
 
 class Membership(models.Model):
@@ -22,9 +22,9 @@ class Membership(models.Model):
     active = models.BooleanField(default=True)
     time_last_sent_message = models.DateTimeField(default=datetime.now)
     total_messages_sent = models.IntegerField(default=0)
-    time_last_received_message = models.DateTimeField(default=datetime.now)
-    last_received_message = models.CharField(max_length=256)
-    no_response_contact = models.CharField(max_length=30)
+    time_last_received_message = models.DateTimeField(default=datetime.now, null=True, blank=True)
+    last_received_message = models.CharField(max_length=256, null=True, blank=True)
+    no_response_contact = models.CharField(max_length=30, null=True, blank=True)
 
 class Campaign(models.Model):
     def __unicode__(self):
@@ -54,13 +54,10 @@ class UserProfile(models.Model):
         return str(self.user)
 
     user = models.OneToOneField(User)
-
-    # fields that I think make sense
-    isGroupManager = models.BooleanField(default=False)
-    isCampaignManager = models.BooleanField(default=False)
-    isAuthorizedEnroller = models.BooleanField(default=False)
     group = models.ForeignKey('Group', null=True)
-    campaign = models.ForeignKey('Campaign', null=True)
+    campaign = models.ForeignKey('Campaign', null=True, blank=True)
+    phone_number = PhoneNumberField(blank=True, null=True, help_text="Format this as +1234567890.")
+    permitted_enroller = models.BooleanField(default=False, verbose_name="This person is allowed to enroll people in campaigns via text.")
 
 # does this get called at the time of user creation...???
 def create_user_profile(sender, instance, created, **kwargs):
