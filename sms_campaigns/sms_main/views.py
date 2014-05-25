@@ -329,12 +329,9 @@ def sms(request):
             r.message(msg)
             request.session[senderNumber] = None
             return r
-    else:
-        msg = "Hello! We don't know you yet!"
-        r = Response()
-        r.message(msg)
-        request.session[senderNumber] = None
-        return r
+    except Exception as e:
+        # print e
+        return invalidRequest('Error.')
 
 def home(request):
     return render(request, 'index.html')
