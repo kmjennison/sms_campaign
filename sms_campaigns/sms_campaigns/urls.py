@@ -24,5 +24,8 @@ urlpatterns = patterns('',
 
     url(r'^sms$', sms),
 
-    url(r'^sign_up$', 'sms_main.views.sign_up')
+    url(r'^sign_up$', 'sms_main.views.sign_up'),
+    url(r'^login$', 'sms_main.views.login'),
+    url(r'^create_campaign$', 'sms_main.views.create_campaign'),
+    url(r'^success$', 'sms_main.views.success'),
 )

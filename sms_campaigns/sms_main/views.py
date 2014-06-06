@@ -18,12 +18,14 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.contrib import admin
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth import authenticate
+from django.contrib.auth import login as auth_login
 
 def addGroup(group_name):
     Group.objects.create(name=group_name)
     
-def addCampaign(name, description, groupId, message_interval, repeats, message, no_response_timeout_in_seconds, no_response_action):
-    group = Group.objects.get(id=groupId)
+def addCampaign(name, description, groupName, message_interval, repeats, message, no_response_timeout_in_seconds, no_response_action):
+    group = Group.objects.get(name=groupName)
     Campaign.objects.create(name=name, description=description, group=group, message_interval_in_seconds=message_interval, total_message_occurrences=repeats, message_text=message, no_response_timeout_in_seconds=no_response_timeout_in_seconds, no_response_action=no_response_action)
     
 def addRecipient(phone_number, first_name='', last_name=''):
@@ -36,13 +38,8 @@ def addRecipientToCampaign(phone_number, campaignId, no_response_contact):
     m = Membership(recipient=recip, campaign=camp, no_response_contact=no_response_contact)
     m.save()
 
-# TODO: Fix.
-# def updateEnrolleeResponse(phone_number, message):
-#     recip = Recipient.objects.get(phone_number=phone_number)
-#     camp = Campaign.objects.get(id=campaignId)
-# 
-#     m = Membership(recipient=recip, time_last_received_message=datetime.now, last_received_message=message)
-#     m.save()
+def addResponse(phone_number, message, campaign, time):
+    Responses.objects.create(time=time, enrolee=phone_number, campaign=campaign, content=message)
 
 # TODO: Change no_response_timeout to time *after* message was delivered, not absolute time.
 def shouldTakeNoResponseAction(time_last_received_message, no_response_timeout):
@@ -233,10 +230,16 @@ def authorizedEnrollerResponse(senderNumber, smsMessage, request):
 
 def enrolleeResponse(senderNumber, smsMessage, request):
     try:
-        # TODO: Fix.
-        # enrolleeNumber = senderNumber
-        # enrolleeMessage = smsMessage
-        # updateEnrolleeResponse(enrolleeNumber, enrolleeMessage)
+        # TODO: test this
+        
+        enrolleeNumber = senderNumber
+        enrolleeMessage = smsMessage
+        time = datetime.utcnow()
+        recipient = Recipient.objects.get(phone_number=senderNumber)
+        membership = Membership.objects.get(recipient=recipient)
+        campaign = membership.campaign;
+
+        addResponse(senderNumber, smsMessage, campaign, time)
 
         msg = 'Thanks for the update!'
         r = Response()
@@ -244,7 +247,7 @@ def enrolleeResponse(senderNumber, smsMessage, request):
         request.session[senderNumber] = None
         return r
     except Exception as e:
-        return invalidRequest('Error: could not reply to enrollee.')
+        return invalidRequest('Error: could not handle enrollee response.')
 
 @twilio_view
 def sms(request):
@@ -301,11 +304,56 @@ def sign_up(request):
         userProfile.save()
 
         user = authenticate(username=username, password=password)
-        login(request, user)
+        auth_login(request, user)
 
-        return HttpResponse(reverse('admin:index'))
+        return HttpResponse('create_campaign')
     else:
         return render(request, 'sign_up.html')
+
+@csrf_exempt
+def create_campaign(request):
+    user = request.user
+    print user
+
+    if request.method == 'POST':
+        name = request.POST['campaignName']
+        description = request.POST['description']
+        interval = request.POST['interval']
+        message = request.POST['message']
+        repeats = request.POST['numMessage']
+        no_response_timeout_in_seconds = '40000000000000'
+        no_response_action = 'placeholder'
+
+        print name, description
+
+        user = request.user
+        userProfile = request.user.get_profile()
+        groupName = userProfile.group
+
+        addCampaign(name, description, groupName, interval, repeats, message, no_response_timeout_in_seconds, no_response_action)
+        return HttpResponse('success')
+
+    else:
+        return render(request, 'create_campaign.html')
+
+@csrf_exempt
+def login(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(username=username, password=password)
+        print user
+        if user is not None:
+            auth_login(request, user)
+            print 'found user and logged them in'
+            return HttpResponse('create_campaign')
+        else:
+            # Return an 'invalid login' error message.
+            return invalidRequest('Login Fail')
+    return render(request, 'login.html')
+
+def success(request):
+    return render(request, 'success.html')
 
 ### Not currently used.
 # def campaignCreatorResponse(senderNumber, smsMessage):
@@ -399,13 +447,3 @@ def sign_up(request):
 #         r.message(msg)
 # 
 #         return r
-
-### Not currently using.
-# def campaign(request):
-#     form = CampaignForm()
-#     if request.method == 'POST':
-#         form = CampaignForm(request.POST)
-#     else:
-#         form = CampaignForm()
-# 
-#     return render(request, 'campaign.html', {'form': form})

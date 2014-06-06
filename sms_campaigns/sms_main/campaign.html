@@ -1,17 +1,43 @@
 <!DOCTYPE html>
-<html>
-<head>
-</head>
-<body>
-
-<form method="post">
-    {{ formset }}
-    <!--
-    {% csrf_token  %}
-    
-    <input type="submit" class="submit" value="Submit" />
-
-    -->
-</form>
-</body>
+<html lang="en">
+   <head>
+      {% load static %}
+      <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+      <script type="text/javascript" src="{% static 'js/jquery-1.11.1.min.js' %}"></script>
+      <script type="text/javascript" src="{% static 'js/bootstrap.min.js' %}"></script>
+      <script type="text/javascript" src="{% static 'js/create_campaign.js' %}"></script>
+   </head>
+   <body>
+      <div class="container">
+         <form role="form" id="campaign">
+            <div>
+               <h3>
+                  Create / Edit Campaign
+               </h3>
+               <hr/>
+            </div>
+            <div class="form-group">
+              <label for="campaignName">Campaign Name</label>
+              <input type="text" class="form-control required" name="campaignName" placeholder="Name">
+            </div>
+            <div class="form-group">
+              <label for="description">Campaign Description</label>
+              <textarea name="description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="interval">Message Interval</label>
+              <input type="text" class="form-control required" name="interval">
+            </div>
+            <div class="form-group">
+              <label for="numMessage">Number of Messages to Send</label>
+              <input type="text" class="form-control required" name="numMessage" placeholder="e.g. 12">
+            </div>
+            <div class="form-group">
+              <label for="message">Message Content</label>
+              <textarea name="message" class="form-control" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Campaign</button>
+         </form>
+      </div>
+   </body>
 </html>

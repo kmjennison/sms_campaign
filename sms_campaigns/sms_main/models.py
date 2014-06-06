@@ -16,7 +16,7 @@ class Recipient(models.Model):
 class Membership(models.Model):
     def __unicode__(self):
         return str(self.id)
-    recipient = models.ForeignKey(Recipient)
+    recipient = models.ForeignKey('Recipient')
     campaign = models.ForeignKey('Campaign')
     time_joined = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=True)
@@ -38,7 +38,17 @@ class Campaign(models.Model):
     message_text = models.TextField()
     response_requested = models.BooleanField(default=False)
     no_response_timeout_in_seconds = models.BigIntegerField()
-    no_response_action = models.CharField(max_length=256)
+    no_response_action = models.CharField(max_length=256, blank=True, null=True)
+
+class Responses(models.Model):
+    def __unicode__(self):
+        return str(self.id)
+
+    time = models.BigIntegerField() # unix timestamp
+    enrollee = models.ForeignKey('Recipient')
+    campaign = models.ForeignKey('Campaign')
+    content = models.CharField(max_length=256)
+
     
 class Group(models.Model):
     def __unicode__(self):

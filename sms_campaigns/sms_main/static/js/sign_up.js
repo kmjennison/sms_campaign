@@ -13,9 +13,9 @@ $(function() {
 			url: '/sign_up',
 			type: 'POST',
 			data: {username: username, email: email, password: password, organization: organization, phonenumber: phonenumber, ein: ein},
-			dataType: 'json',
 			success: function(response) {
 				console.log(response)
+				window.location.href = '/' + response
 			}
 		})
 	})
