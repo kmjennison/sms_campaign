@@ -1,0 +1,21 @@
+.main-page{
+	background: url("backgrounds/blurred_city.jpg") no-repeat;
+	background-position: center;
+	background-attachment: fixed;
+	background-size: cover;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	left: 0;
+}
+
+.main-text{
+	background: #eee;
+	opacity: 0.3;
+	margin-top: 25%;
+	text-align: center;
+	color: black;
+	padding-left: 25px;
+	padding-right: 25px;
+}
